@@ -1,0 +1,5 @@
+IP: 158.160.190.192;
+name_taski: https://taskimirik.duckdns.org;
+name_kittygram: https://kittygrammirik.duckdns.org;
+login: admin;
+password: Admin1234!
