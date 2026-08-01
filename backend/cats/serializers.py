@@ -1,24 +1,29 @@
 import base64
-
 from django.core.files.base import ContentFile
 from rest_framework import serializers
 import webcolors
-
-
 import datetime as dt
 
 from .models import Achievement, AchievementCat, Cat
 
 
 class Hex2NameColor(serializers.Field):
+    """Поле, которое принимает hex-код или имя цвета в любом регистре."""
     def to_representation(self, value):
         return value
 
     def to_internal_value(self, data):
         try:
+            # Сначала пробуем как hex
             data = webcolors.hex_to_name(data)
         except ValueError:
-            raise serializers.ValidationError('Для этого цвета нет имени')
+            try:
+                # Приводим к нижнему регистру и получаем hex по имени
+                data = webcolors.name_to_hex(data.lower())
+                # Затем обратно получаем каноническое имя
+                data = webcolors.hex_to_name(data)
+            except ValueError:
+                raise serializers.ValidationError('Для этого цвета нет имени')
         return data
 
 
@@ -35,9 +40,7 @@ class Base64ImageField(serializers.ImageField):
         if isinstance(data, str) and data.startswith('data:image'):
             format, imgstr = data.split(';base64,')
             ext = format.split('/')[-1]
-
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
-
         return super().to_internal_value(data)
 
 
@@ -88,7 +91,7 @@ class CatSerializer(serializers.ModelSerializer):
         instance.color = validated_data.get('color', instance.color)
         instance.birth_year = validated_data.get(
             'birth_year', instance.birth_year
-            )
+        )
         instance.image = validated_data.get('image', instance.image)
         if 'achievements' in validated_data:
             achievements_data = validated_data.pop('achievements')
